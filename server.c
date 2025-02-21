@@ -62,8 +62,8 @@ int16_t hum;
 
 // AES key (128-bit, 16 bytes)
 static const uint8_t aes_key[AES_KEY_SIZE] = {
-    0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38,
-    0x39, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67
+    0x54,0x52,0x75,0x73,0x56,0x48,0x77,0x63,
+    0x6B,0x77,0x59,0x7A,0x42,0x37,0x6E,0x70
 };
 
 void encrypt_message(const uint8_t *input, size_t len, uint8_t *output) {
@@ -72,7 +72,6 @@ void encrypt_message(const uint8_t *input, size_t len, uint8_t *output) {
     cipher_t cipher;
 
     // Ensure the input data fits in one AES block (16 bytes)
-    printf("\n %d \n", len);
     if (len > AES_BLOCK_SIZE) {
         printf("Input too large for AES block size\n");
         return;
@@ -145,7 +144,7 @@ static ssize_t _encode_link(const coap_resource_t *resource, char *buf,
 
 void read_sensorData(void) {
     dht_read(&dev, &temp, &hum);
-    printf("DHT values - temp: %d.%d°C - relative humidity: %d.%d%%\n", temp / 10, temp % 10, hum / 10, hum % 10);
+    printf("\nDHT values - temp: %d.%d°C - relative humidity: %d.%d%%\n", temp / 10, temp % 10, hum / 10, hum % 10);
 }
 
 static ssize_t _sensorData_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, coap_request_ctx_t *ctx) {
@@ -160,7 +159,7 @@ static ssize_t _sensorData_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, co
 
     // Prepare the JSON payload
     size_t len_written = snprintf((char *)pdu->payload, 1024, 
-                                  "{\"d\": [%d,%d]}", temp, hum);
+                                  "{\"d\":[%d,%d]}", temp/10, hum);
 
     // Print the original (plaintext) payload
     printf("Original Payload: %s\n", pdu->payload);
@@ -171,10 +170,10 @@ static ssize_t _sensorData_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, co
 
     // Print the encrypted payload (in hexadecimal)
     printf("Encrypted Payload: ");
-    for (size_t i = 0; i < AES_BLOCK_SIZE; i++) {
+    for (size_t i = 0; i < AES_KEY_SIZE; i++) {
         printf("%02x ", encrypted_payload[i]);
     }
-    printf("\n");
+    printf("\n %hhn", encrypted_payload);
 
     // Send the encrypted payload
     size_t resp_len = coap_opt_finish(pdu, COAP_OPT_FINISH_PAYLOAD);
@@ -227,36 +226,10 @@ static ssize_t _sensorData_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, co
 
 void notify_observers(void)
 {
-    size_t len;
-    uint8_t buf[CONFIG_GCOAP_PDU_BUF_SIZE];
-    coap_pkt_t pdu;
-
-    /* send Observe notification for /cli/stats */
-    switch (gcoap_obs_init(&pdu, &buf[0], CONFIG_GCOAP_PDU_BUF_SIZE,
-            &_resources[0])) {
-    case GCOAP_OBS_INIT_OK:
-        DEBUG("gcoap_cli: creating /cli/stats notification\n");
-        coap_opt_add_format(&pdu, COAP_FORMAT_TEXT);
-        len = coap_opt_finish(&pdu, COAP_OPT_FINISH_PAYLOAD);
-        len += fmt_u16_dec((char *)pdu.payload, req_count);
-        gcoap_obs_send(&buf[0], len, &_resources[0]);
-        break;
-    case GCOAP_OBS_INIT_UNUSED:
-        DEBUG("gcoap_cli: no observer for /cli/stats\n");
-        break;
-    case GCOAP_OBS_INIT_ERR:
-        DEBUG("gcoap_cli: error initializing /cli/stats notification\n");
-        break;
-    }
 }
 
 void server_init(void)
 {
-    /* cipher_t cipher;
-    if (cipher_init(&cipher, CIPHER_AES, key, AES_KEY_SIZE) < 0) {
-        printf("Cipher init failed!\n");
-    } */
-
     int res = dht_init(&dev, &my_params);
     if (res != DHT_OK) {
         printf("Failed to initialize DHT sensor. Error code: %d\n", res);
@@ -266,5 +239,4 @@ void server_init(void)
    	}
 
     gcoap_register_listener(&_listener);
-
 }
