@@ -67,6 +67,8 @@ static const uint8_t aes_key[AES_KEY_SIZE] = {
 };
 
 void encrypt_message(const uint8_t *input, size_t len, uint8_t *output) {
+    // This method is for encrypting the payload before sending it out
+	
     uint8_t plain_text[AES_BLOCK_SIZE] = {0};  // Buffer for input data (AES block size)
     uint8_t cipher_text[AES_BLOCK_SIZE];       // Buffer for encrypted data
     cipher_t cipher;
@@ -143,6 +145,8 @@ static ssize_t _encode_link(const coap_resource_t *resource, char *buf,
 }
 
 void read_sensorData(void) {
+    // This function is for reading the current data of the connected sensor
+	
     dht_read(&dev, &temp, &hum);
     printf("\nDHT values - temp: %d.%d°C - relative humidity: %d.%d%%\n", temp / 10, temp % 10, hum / 10, hum % 10);
 }
@@ -184,53 +188,14 @@ static ssize_t _sensorData_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, co
     return resp_len;
 }
 
-/* static ssize_t _sensorData_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, coap_request_ctx_t *ctx)
-{   
-    (void)ctx;
-    read_sensorData();
-    
-    // Initialize CoAP response
-    gcoap_resp_init(pdu, buf, len, COAP_CODE_CONTENT);
-
-    // Optionally, specify the content type (application/json or plain text for example)
-    coap_opt_add_format(pdu, COAP_FORMAT_AIF_JSON);
-
-    // Format the response payload (temperature in Celsius)
-    size_t resp_len = coap_opt_finish(pdu, COAP_OPT_FINISH_PAYLOAD);
-    size_t len_written = snprintf((char *)pdu->payload, 1024, 
-                                  "{\"temperature\": %d, \"humidity\": %d}", temp, hum);
-    
-    resp_len += len_written;
-
-    return resp_len;
-} */
-
-/* static ssize_t _temperature_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, coap_request_ctx_t *ctx)
-{
-    (void)ctx;
-    int32_t temp_celsius = read_sensorData();  // Call the temperature read function
-
-    // Initialize CoAP response
-    gcoap_resp_init(pdu, buf, len, COAP_CODE_CONTENT);
-
-    // Optionally, specify the content type (application/json or plain text for example)
-    coap_opt_add_format(pdu, COAP_FORMAT_TEXT);
-
-    // Format the response payload (temperature in Celsius)
-    size_t resp_len = coap_opt_finish(pdu, COAP_OPT_FINISH_PAYLOAD);
-    resp_len += fmt_u32_dec((char *)pdu->payload, temp_celsius);
-
-    return resp_len;
-} */
-
-
 void notify_observers(void)
 {
+	//Can stay empty
 }
 
 void server_init(void)
 {
-    int res = dht_init(&dev, &my_params);
+    int res = dht_init(&dev, &my_params); //Initialize Sensor
     if (res != DHT_OK) {
         printf("Failed to initialize DHT sensor. Error code: %d\n", res);
     } else {
